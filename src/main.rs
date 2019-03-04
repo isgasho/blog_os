@@ -3,7 +3,7 @@
 #![cfg_attr(test, allow(unused_imports))]
 
 use blog_os::println;
-use bootloader::{bootinfo::BootInfo, entry_point};
+use bootloader::{entry_point, BootInfo};
 use core::panic::PanicInfo;
 
 entry_point!(kernel_main);
@@ -20,10 +20,10 @@ fn kernel_main(boot_info: &'static BootInfo) -> ! {
     unsafe { PICS.lock().initialize() };
     x86_64::instructions::interrupts::enable();
 
-    let mut recursive_page_table = unsafe { memory::init(boot_info.p4_table_addr as usize) };
+    let mut mapper = unsafe { memory::init(boot_info.physical_memory_offset) };
     let mut frame_allocator = memory::init_frame_allocator(&boot_info.memory_map);
 
-    create_example_mapping(&mut recursive_page_table, &mut frame_allocator);
+    create_example_mapping(&mut mapper, &mut frame_allocator);
     unsafe { (0xdeadbeaf900 as *mut u64).write_volatile(0xf021f077f065f04e) };
 
     println!("It did not crash!");
